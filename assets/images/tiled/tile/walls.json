@@ -1,0 +1,14 @@
+{ "columns":96,
+ "image":"mini_world\/walls.png",
+ "imageheight":1536,
+ "imagewidth":1536,
+ "margin":0,
+ "name":"walls",
+ "spacing":0,
+ "tilecount":9216,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

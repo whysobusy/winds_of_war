@@ -1,0 +1,14 @@
+{ "columns":64,
+ "image":"mini_world\/buildings.png",
+ "imageheight":624,
+ "imagewidth":1024,
+ "margin":0,
+ "name":"buildings",
+ "spacing":0,
+ "tilecount":2496,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

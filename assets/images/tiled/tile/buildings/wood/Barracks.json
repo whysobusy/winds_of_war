@@ -1,0 +1,14 @@
+{ "columns":4,
+ "image":"..\/..\/MiniWorldSprites\/Buildings\/Wood\/Barracks.png",
+ "imageheight":80,
+ "imagewidth":64,
+ "margin":0,
+ "name":"Barracks",
+ "spacing":0,
+ "tilecount":20,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

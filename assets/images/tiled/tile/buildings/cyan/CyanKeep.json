@@ -1,0 +1,14 @@
+{ "columns":6,
+ "image":"..\/..\/MiniWorldSprites\/Buildings\/Cyan\/CyanKeep.png",
+ "imageheight":64,
+ "imagewidth":96,
+ "margin":0,
+ "name":"CyanKeep",
+ "spacing":0,
+ "tilecount":24,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

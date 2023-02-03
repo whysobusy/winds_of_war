@@ -1,0 +1,250 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "norhan.json",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "alives_orcs.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "alives_other.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/cyan/CyanKeep.json": {
+            "scaleInDock": 1
+        },
+        "buildings/cyan/CyanKeep.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/enemy/Mausoleum.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Barracks.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/CaveV2.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/CaveV2.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Chapels.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Docks.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Houses.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Huts.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Keep.json": {
+            "scaleInDock": 1
+        },
+        "buildings/wood/Keep.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Market.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Resources.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Taverns.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Tower.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Tower2.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "buildings/wood/Workshops.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Cliff-Water.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Cliff-Water.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Cliff.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Cliff.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/DeadGrass.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/DeadGrass.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Grass.json": {
+            "scaleInDock": 1
+        },
+        "ground/Grass.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Grass.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Shore.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Shore.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Shore.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/TexturedGrass.json": {
+            "scaleInDock": 1
+        },
+        "ground/TexturedGrass.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/TexturedGrass.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Winter.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ground/Winter.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "indoor_things.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "nature.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "norhan.json": {
+            "scale": 1.5,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 127.33333333333334,
+                "y": 143
+            }
+        },
+        "norhan.tmj": {
+            "scale": 0.21142578125,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 3996.674364896074,
+                "y": 3994.309468822171
+            }
+        },
+        "norhan_origin.json": {
+            "scale": 0.0625,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 5088,
+                "y": 4968
+            }
+        },
+        "terrain.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "terrain.tsj": {
+            "scaleInDock": 2,
+            "scaleInEditor": 1
+        },
+        "terrain_decor.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "things.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "walls.tsj": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "last.exportedFilePath": "C:/Users/zeqin/Documents/dart project/winds_of_war/assets/images/tiled/tile/buildings/enemy",
+    "last.imagePath": "C:/Users/zeqin/Documents/dart project/winds_of_war/assets/images/tiled/tile/mini_world",
+    "lastUsedTilesetExportFilter": "JSON tileset files (*.tsj *.json)",
+    "map.height": 500,
+    "map.lastUsedFormat": "json",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "map.width": 500,
+    "openFiles": [
+        "norhan.json",
+        "terrain.json",
+        "buildings.json"
+    ],
+    "project": "winds_of_war.tiled-project",
+    "property.type": "string",
+    "recentFiles": [
+        "buildings.json",
+        "terrain.json",
+        "norhan.json",
+        "norhan_origin.json",
+        "terrain.tsj",
+        "nature.tsj",
+        "buildings.tsj",
+        "terrain_decor.tsj",
+        "walls.tsj",
+        "things.tsj",
+        "indoor_things.tsj",
+        "alives_other.tsj"
+    ],
+    "tileset.lastUsedFormat": "json",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    }
+}

@@ -1,0 +1,14 @@
+{ "columns":64,
+ "image":"mini_world\/alives_other.png",
+ "imageheight":1024,
+ "imagewidth":1024,
+ "margin":0,
+ "name":"alives_other",
+ "spacing":0,
+ "tilecount":4096,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}

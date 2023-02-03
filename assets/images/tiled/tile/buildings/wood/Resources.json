@@ -1,0 +1,14 @@
+{ "columns":3,
+ "image":"..\/..\/MiniWorldSprites\/Buildings\/Wood\/Resources.png",
+ "imageheight":80,
+ "imagewidth":48,
+ "margin":0,
+ "name":"Resources",
+ "spacing":0,
+ "tilecount":15,
+ "tiledversion":"1.9.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.9"
+}
