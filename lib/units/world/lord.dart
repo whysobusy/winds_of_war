@@ -10,6 +10,7 @@ import 'package:winds_of_war/manager/game_manager.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/util/enemy_sprite_sheet.dart';
+import 'package:winds_of_war/util/functions.dart';
 import 'package:winds_of_war/util/mixins/faction_mixin.dart';
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
 
@@ -44,7 +45,8 @@ class Lord extends SimpleNpc
         FactionMixin,
         AutomaticRandomMovement,
         WorldNpcMixin,
-        MyMoveToPositionAlongThePath {
+        MyMoveToPositionAlongThePath,
+        ObjectCollision {
   final GameManager manager = BonfireInjector.instance.get();
 
   final LordName name;
@@ -68,6 +70,7 @@ class Lord extends SimpleNpc
   LordAction action = LordAction.idle;
   final CityName manor;
   CityName currentLocation = CityName.none;
+  late Random _random;
 
   Lord(
       {required super.position,
@@ -80,20 +83,113 @@ class Lord extends SimpleNpc
               ? EnemySpriteSheet.bossAnimations()
               : EnemySpriteSheet.goblinAnimations(),
           size: Vector2(tileSize * 0.8, tileSize),
-          speed: tileSize,
+          speed: name == LordName.riven ? tileSize : tileSize * 2,
         ) {
     faction = factionType;
     this.party.addAllUnit(party.units);
+    if (name == LordName.riven) {
+      this.party.addUnit(GoblinUnit());
+    }
     var uuid = Uuid();
     id = uuid.v1();
     setupVision(drawVision: true);
+
+    setupCollision(
+      CollisionConfig(
+        collisions: [
+          CollisionArea.rectangle(
+            size: Vector2(
+              valueByTileSize(7),
+              valueByTileSize(7),
+            ),
+            align: Vector2(valueByTileSize(3), valueByTileSize(4)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Future<void> onLoad() {
     enabledCheckIsVisible = false;
     _becomeVisible();
+    _random = Random();
     return super.onLoad();
+  }
+
+  void myRunRandomMovement(
+    double dt, {
+    bool runOnlyVisibleInCamera = true,
+    double speed = 20,
+    int maxDistance = 50,
+    int minDistance = 0,
+    int timeKeepStopped = 1000,
+    bool useAngle = false,
+    bool debug = false,
+
+    /// milliseconds
+  }) {
+    if (runOnlyVisibleInCamera && !isVisibleReduction) {
+      return;
+    }
+
+    int randomX = _random.nextInt(maxDistance);
+    randomX = randomX < minDistance ? minDistance : randomX;
+    int randomY = _random.nextInt(maxDistance);
+    randomY = randomY < minDistance ? minDistance : randomY;
+
+    int randomNegativeX = _random.nextBool() ? -1 : 1;
+    int randomNegativeY = _random.nextBool() ? -1 : 1;
+    final _targetRandomMovement = position.translate(
+      randomX.toDouble() * randomNegativeX,
+      randomY.toDouble() * randomNegativeY,
+    );
+
+    bool canMoveX = (_targetRandomMovement.x - x).abs() > speed * dt;
+    bool canMoveY = (_targetRandomMovement.y - y).abs() > speed * dt;
+
+    bool canMoveLeft = false;
+    bool canMoveRight = false;
+    bool canMoveUp = false;
+    bool canMoveDown = false;
+    if (canMoveX) {
+      if (_targetRandomMovement.x > x) {
+        canMoveRight = true;
+      } else {
+        canMoveLeft = true;
+      }
+    }
+    if (canMoveY) {
+      if (_targetRandomMovement.y > y) {
+        canMoveDown = true;
+      } else {
+        canMoveUp = true;
+      }
+    }
+    bool onMove = false;
+    if (useAngle) {
+      if (canMoveX && canMoveY) {
+        onMove = moveFromAngle(speed, angle);
+      }
+    } else {
+      if (canMoveLeft && canMoveUp) {
+        onMove = moveUpLeft(speed, speed);
+      } else if (canMoveLeft && canMoveDown) {
+        onMove = moveDownLeft(speed, speed);
+      } else if (canMoveRight && canMoveUp) {
+        onMove = moveUpRight(speed, speed);
+      } else if (canMoveRight && canMoveDown) {
+        onMove = moveDownRight(speed, speed);
+      } else if (canMoveRight) {
+        onMove = moveRight(speed);
+      } else if (canMoveLeft) {
+        onMove = moveLeft(speed);
+      } else if (canMoveUp) {
+        onMove = moveUp(speed);
+      } else if (canMoveDown) {
+        onMove = moveDown(speed);
+      }
+    }
   }
 
   @override
@@ -105,35 +201,89 @@ class Lord extends SimpleNpc
     super.update(dt);
     if (!isInBattle) {
       if (state == LordState.patrolling) {
-        patrol(dt * 20, speed);
+        myPatrol(
+          dt,
+          maxDistance: 16,
+          minDistance: 0,
+          debug: LordName.gwen == name,
+        );
+        //patrol(dt * 20, speed);
       }
-      if (isVisible) {
+      if (state == LordState.fleeing) {
         seeComponentType<WorldNpcMixin>(
-          radiusVision: (tileSize * 10),
+            radiusVision: (tileSize * 15),
+            observed: (npcs) {
+              for (final npc in npcs) {
+                if (npc != this && manager.isEnemy(faction, npc.faction)) {
+                  bool move = runAwayFrom(
+                    npc,
+                    dtUpdate,
+                    closeComponent: (comp) {
+                      isInBattle = true;
+                      manager.requestBattle(
+                          id, (comp as WorldNpcMixin).id, this);
+                      idle();
+                      makeDecision(action);
+                    },
+                    escapeComponent: (comp) {
+                      print("escape");
+                      idle();
+                      makeDecision(action);
+                    },
+                  );
+                  return;
+                }
+              }
+            },
+            notObserved: () {
+              idle();
+              makeDecision(action);
+            });
+      }
+
+      if (isVisible && state != LordState.fleeing) {
+        seeComponentType<WorldNpcMixin>(
+          radiusVision: (tileSize * 13),
           observed: (npcs) {
             for (final npc in npcs) {
               if (npc != this && manager.isEnemy(faction, npc.faction)) {
-                if (!isVisible) {
-                  return;
-                }
-
-                if (state != LordState.following) {
-                  stopMoveAlongThePath();
-                  state = LordState.following;
-                }
-                // if (currentPath.isNotEmpty) {
-                //   stopMoveAlongThePath();
-                //   print('error');
-                // }
-                bool move =
-                    myFollowComponent(npc, dtUpdate, closeComponent: (comp) {
-                  isInBattle = true;
-                  manager.requestBattle(id, (comp as WorldNpcMixin).id, this);
-                  idle();
-                  makeDecision(action);
-                }, debug: false);
-                if (!move) {
-                  makeDecision(action);
+                if (npc.distance(this) < tileSize * 9) {
+                  if (isStrongerThan(npc)) {
+                    if (state != LordState.following) {
+                      stopMoveAlongThePath();
+                      state = LordState.following;
+                    }
+                    print("following");
+                    print(currentPath);
+                    bool move = myFollowComponent(npc, dtUpdate,
+                        closeComponent: (comp) {
+                      isInBattle = true;
+                      manager.requestBattle(
+                          id, (comp as WorldNpcMixin).id, this);
+                      idle();
+                      makeDecision(action);
+                    }, escapeComponent: (comp) {
+                      print("cannot catch");
+                      idle();
+                      makeDecision(action);
+                    }, debug: false);
+                    if (!move) {
+                      print("no move");
+                      makeDecision(action);
+                    }
+                  } else {
+                    if (state != LordState.fleeing) {
+                      stopMoveAlongThePath();
+                      state = LordState.fleeing;
+                    }
+                    //runAwayFrom(npc);
+                  }
+                } else {
+                  if (state == LordState.following) {
+                    print("no move");
+                    idle();
+                    makeDecision(action);
+                  }
                 }
                 return;
               }
@@ -201,6 +351,20 @@ class Lord extends SimpleNpc
     }
   }
 
+  // void runAwayFrom(WorldNpcMixin npc) {
+  //   final info = manager.nearestFriendCity(position, faction);
+  //   final cityPosition = info[1] as Vector2;
+  //   final cityName = info[0] as CityName;
+
+  //   if (position.distanceTo(this.position) <
+  //       this.position.distanceTo(npc.position)) {
+  //     moveToPositionAlongThePath(
+  //       cityPosition,
+  //       onFinish: (() => _onEnterCity((info[0] as CityName))),
+  //     );
+  //   }
+  // }
+
   void _checkPower() {
     makeDecision(LordAction.backToManor);
   }
@@ -258,6 +422,7 @@ extension Myext on Movement {
     GameComponent target,
     double dt, {
     required Function(GameComponent) closeComponent,
+    required Function(GameComponent) escapeComponent,
     double margin = 0,
     bool debug = false,
   }) {
@@ -313,6 +478,8 @@ extension Myext on Movement {
     translateX /= dt;
     translateY /= dt;
 
+    print(translateY);
+
     if (debug) {
       print("X:" + translateX.toString());
       print("Y: " + translateY.toString());
@@ -343,6 +510,166 @@ extension Myext on Movement {
     if (!moved) {
       idle();
       return false;
+    }
+
+    if (position.distanceTo(target.position) >= tileSize * 10) {
+      print("cannot");
+      escapeComponent(target);
+    }
+
+    return true;
+  }
+
+  bool myPatrol(
+    double dt, {
+    double margin = 0,
+    bool debug = false,
+    int maxDistance = 50,
+    int minDistance = 0,
+  }) {
+    final _random = Random(Random().nextInt(1000));
+    int randomX = _random.nextInt(maxDistance);
+    randomX = randomX < minDistance ? minDistance : randomX;
+    int randomY = _random.nextInt(maxDistance);
+    randomY = randomY < minDistance ? minDistance : randomY;
+
+    int randomNegativeX = _random.nextBool() ? -1 : 1;
+    int randomNegativeY = _random.nextBool() ? -1 : 1;
+
+    double centerXPlayer = randomX.toDouble() * randomNegativeX;
+    double centerYPlayer = randomY.toDouble() * randomNegativeY;
+
+    double translateX = 0;
+    double translateY = 0;
+    double speed = this.speed * dt;
+
+    Rect rectToMove = rectConsideringCollision;
+
+    translateX = rectToMove.center.dx > centerXPlayer ? (-1 * speed) : speed;
+    translateY = rectToMove.center.dy > centerYPlayer ? (-1 * speed) : speed;
+
+    translateX /= dt;
+    translateY /= dt;
+
+    if (debug) {
+      print("X:" + translateX.toString());
+      print("Y: " + translateY.toString());
+    }
+    bool moved = false;
+
+    if (translateX > 0 && translateY > 0) {
+      moved = moveDownRight(translateX, translateY);
+    } else if (translateX < 0 && translateY < 0) {
+      moved = moveUpLeft(translateX.abs(), translateY.abs());
+    } else if (translateX > 0 && translateY < 0) {
+      moved = moveUpRight(translateX, translateY.abs());
+    } else if (translateX < 0 && translateY > 0) {
+      moved = moveDownLeft(translateX.abs(), translateY);
+    } else {
+      if (translateX > 0) {
+        moved = moveRight(translateX);
+      } else if (translateX < 0) {
+        moved = moveLeft(translateX.abs());
+      }
+      if (translateY > 0) {
+        moved = moveDown(translateY, debug: debug);
+      } else if (translateY < 0) {
+        moved = moveUp(translateY.abs());
+      }
+    }
+
+    if (!moved) {
+      idle();
+      return false;
+    }
+
+    return true;
+  }
+
+  bool runAwayFrom(
+    GameComponent target,
+    double dt, {
+    required Function(GameComponent) closeComponent,
+    required Function(GameComponent) escapeComponent,
+    double margin = 0,
+    bool debug = false,
+  }) {
+    final comp = target.rectConsideringCollision;
+    double centerXPlayer = comp.center.dx;
+    double centerYPlayer = comp.center.dy;
+
+    double translateX = 0;
+    double translateY = 0;
+    double speed = this.speed * dt;
+
+    Rect rectToMove = rectConsideringCollision;
+    if (debug) {
+      print("position: " + position.toString());
+      print("target Pos: " + target.position.toString());
+      print((target as Lord).id == (this as Lord).id);
+    }
+
+    translateX = rectToMove.center.dx > centerXPlayer ? speed : (-1 * speed);
+    translateY = rectToMove.center.dy > centerYPlayer ? speed : (-1 * speed);
+    Rect rectPlayerCollision = Rect.fromLTWH(
+      comp.left - margin,
+      comp.top - margin,
+      comp.width + (margin * 2),
+      comp.height + (margin * 2),
+    );
+
+    if (rectToMove.overlaps(rectPlayerCollision)) {
+      if (debug) {
+        print("overlap");
+        print("to move: " + rectToMove.toString());
+        print("target: " + rectPlayerCollision.toString());
+      }
+      closeComponent(target);
+      if (!isIdle) {
+        idle();
+      }
+      return false;
+    }
+
+    translateX /= dt;
+    translateY /= dt;
+
+    print(translateY);
+
+    if (debug) {
+      print("X:" + translateX.toString());
+      print("Y: " + translateY.toString());
+    }
+    bool moved = false;
+
+    if (translateX > 0 && translateY > 0) {
+      moved = moveDownRight(translateX, translateY);
+    } else if (translateX < 0 && translateY < 0) {
+      moved = moveUpLeft(translateX.abs(), translateY.abs());
+    } else if (translateX > 0 && translateY < 0) {
+      moved = moveUpRight(translateX, translateY.abs());
+    } else if (translateX < 0 && translateY > 0) {
+      moved = moveDownLeft(translateX.abs(), translateY);
+    } else {
+      if (translateX > 0) {
+        moved = moveRight(translateX);
+      } else if (translateX < 0) {
+        moved = moveLeft(translateX.abs());
+      }
+      if (translateY > 0) {
+        moved = moveDown(translateY, debug: debug);
+      } else if (translateY < 0) {
+        moved = moveUp(translateY.abs());
+      }
+    }
+
+    if (!moved) {
+      idle();
+      return false;
+    }
+    if ((position.distanceTo(target.position) >= tileSize * 12) ||
+        !target.isVisible) {
+      escapeComponent(target);
     }
 
     return true;
@@ -776,5 +1103,127 @@ mixin MyMoveToPositionAlongThePath on Movement {
   void _removeLinePathComponent() {
     _linePathComponent?.removeFromParent();
     _linePathComponent = null;
+  }
+}
+
+mixin MyAutomaticRandomMovement on Movement {
+  Vector2 _targetRandomMovement = Vector2.zero();
+  // ignore: constant_identifier_names
+  static const _KEY_INTERVAL_KEEP_STOPPED = 'INTERVAL_RANDOM_MOVEMENT';
+
+  late Random _random;
+
+  bool get isVisibleReduction {
+    if (hasGameRef) {
+      return gameRef.camera.cameraRect.overlapComponent(this);
+    }
+    return false;
+  }
+
+  /// Method that bo used in [update] method.
+  void myRunRandomMovement(
+    double dt, {
+    bool runOnlyVisibleInCamera = true,
+    double speed = 20,
+    int maxDistance = 50,
+    int minDistance = 0,
+    int timeKeepStopped = 1000,
+    bool useAngle = false,
+    bool debug = false,
+
+    /// milliseconds
+  }) {
+    if (runOnlyVisibleInCamera && !isVisibleReduction) {
+      return;
+    }
+
+    if (_targetRandomMovement == Vector2.zero()) {
+      if (debug) {
+        print("inint");
+      }
+      if (checkInterval(_KEY_INTERVAL_KEEP_STOPPED, timeKeepStopped, dt)) {
+        int randomX = _random.nextInt(maxDistance);
+        randomX = randomX < minDistance ? minDistance : randomX;
+        int randomY = _random.nextInt(maxDistance);
+        randomY = randomY < minDistance ? minDistance : randomY;
+
+        int randomNegativeX = _random.nextBool() ? -1 : 1;
+        int randomNegativeY = _random.nextBool() ? -1 : 1;
+        _targetRandomMovement = position.translate(
+          randomX.toDouble() * randomNegativeX,
+          randomY.toDouble() * randomNegativeY,
+        );
+        if (useAngle) {
+          angle = BonfireUtil.angleBetweenPoints(
+            rectConsideringCollision.center.toVector2(),
+            _targetRandomMovement,
+          );
+        }
+
+        if (debug) {
+          print("target" + _targetRandomMovement.toString());
+        }
+      }
+    } else {
+      bool canMoveX = (_targetRandomMovement.x - x).abs() > speed;
+      bool canMoveY = (_targetRandomMovement.y - y).abs() > speed;
+      bool canMoveLeft = false;
+      bool canMoveRight = false;
+      bool canMoveUp = false;
+      bool canMoveDown = false;
+      if (canMoveX) {
+        if (_targetRandomMovement.x > x) {
+          canMoveRight = true;
+        } else {
+          canMoveLeft = true;
+        }
+      }
+      if (canMoveY) {
+        if (_targetRandomMovement.y > y) {
+          canMoveDown = true;
+        } else {
+          canMoveUp = true;
+        }
+      }
+      bool onMove = false;
+      if (useAngle) {
+        if (canMoveX && canMoveY) {
+          onMove = moveFromAngle(speed, angle);
+        }
+      } else {
+        if (canMoveLeft && canMoveUp) {
+          onMove = moveUpLeft(speed, speed);
+        } else if (canMoveLeft && canMoveDown) {
+          onMove = moveDownLeft(speed, speed);
+        } else if (canMoveRight && canMoveUp) {
+          onMove = moveUpRight(speed, speed);
+        } else if (canMoveRight && canMoveDown) {
+          onMove = moveDownRight(speed, speed);
+        } else if (canMoveRight) {
+          onMove = moveRight(speed);
+        } else if (canMoveLeft) {
+          onMove = moveLeft(speed);
+        } else if (canMoveUp) {
+          onMove = moveUp(speed);
+        } else if (canMoveDown) {
+          onMove = moveDown(speed);
+        }
+      }
+
+      if (!onMove) {
+        _cleanTargetMovementRandom();
+      }
+    }
+  }
+
+  void _cleanTargetMovementRandom() {
+    _targetRandomMovement = Vector2.zero();
+    idle();
+  }
+
+  @override
+  void onMount() {
+    _random = Random(Random().nextInt(1000));
+    super.onMount();
   }
 }

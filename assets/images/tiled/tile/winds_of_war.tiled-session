@@ -170,9 +170,9 @@
         },
         "norhan.json": {
             "scale": 1.5,
-            "selectedLayer": 5,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 127.33333333333334,
+                "x": 54.666666666666686,
                 "y": 143
             }
         },

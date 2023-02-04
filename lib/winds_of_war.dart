@@ -107,6 +107,7 @@ class _WindsOfWarState extends State<WindsOfWar> implements GameListener {
         cameraConfig: CameraConfig(zoom: 0.5),
         gameController: _controller,
         joystick: joystick,
+        showCollisionArea: true,
         player: PlayerWorld(
           info: _gameManager.getPlayerInfo(),
           Vector2(2 * tileSize, 3 * tileSize),

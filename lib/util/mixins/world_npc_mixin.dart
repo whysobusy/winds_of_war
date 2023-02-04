@@ -24,7 +24,7 @@ mixin WorldNpcMixin on Npc, AutomaticRandomMovement, FactionMixin {
           runOnlyVisibleInCamera: false,
           speed: speed,
           maxDistance: 128,
-          minDistance: 16,
+          minDistance: 64,
         );
   }
 
