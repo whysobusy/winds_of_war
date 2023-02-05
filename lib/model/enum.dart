@@ -24,6 +24,7 @@ enum LordName {
   city,
   gwen,
   riven,
+  yasuo
 }
 
 enum CityName {

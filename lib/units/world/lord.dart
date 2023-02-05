@@ -93,7 +93,7 @@ class Lord extends SimpleNpc
     }
     var uuid = Uuid();
     id = uuid.v1();
-    setupVision(drawVision: true);
+    //setupVision(drawVision: true, color: name == LordName.yasuo ? Colors.blue.withOpacity(0.5) : Colors.red.withOpacity(0.5));
     setupCollision(
       CollisionConfig(
         collisions: [
@@ -107,6 +107,23 @@ class Lord extends SimpleNpc
         ],
       ),
     );
+
+    setupMoveToPositionAlongThePath(barriersCalculatedColor: Colors.teal.withOpacity(0.3), pathLineColor: Colors.amber, showBarriersCalculated: true);
+  }
+
+  @override
+  bool onCollision(GameComponent component, bool active) {
+    if (component is WorldNpcMixin) {
+      if(manager.isEnemy(component.faction, faction)) {
+        manager.requestBattle(id, component.id, this);
+      }
+      return false;
+    }
+
+    if (component is Player) {
+      return false;
+    }
+    return super.onCollision(component, active);
   }
 
   @override
@@ -125,6 +142,10 @@ class Lord extends SimpleNpc
 
     super.update(dt);
     if (!isInBattle) {
+      if (state == LordState.moving && currentPath.isEmpty) {
+        makeDecision(action);
+      }
+
       if (state == LordState.patrolling) {
         myPatrol(
           dt,
@@ -133,18 +154,8 @@ class Lord extends SimpleNpc
           debug: LordName.gwen == name,
           //initRandom: _random,
         );
-        //patrol(dt * 20, speed);
-
-        // runRandomMovement(
-        //   dt * 20, speed: speed,
-        //   maxDistance: 50,
-        //   minDistance: 16,
-        //   timeKeepStopped: 1000
-        //   /// milliseconds
-        // );
       }
       if (state == LordState.fleeing) {
-        print(gameRef.visibleComponentsByType<WorldNpcMixin>());
         seeComponentType<WorldNpcMixin>(
           radiusVision: (tileSize * 15),
           observed: (npcs) {
@@ -155,8 +166,7 @@ class Lord extends SimpleNpc
                   dtUpdate,
                   closeComponent: (comp) {
                     isInBattle = true;
-                    print("close request");
-                    print(id);
+                    print("close request");;
                     manager.requestBattle(id, (comp as WorldNpcMixin).id, this);
                     idle();
                     makeDecision(action);
@@ -173,7 +183,7 @@ class Lord extends SimpleNpc
                 return;
               }
             }
-
+            print("default decision");
             idle();
             makeDecision(action);
             return;
@@ -193,8 +203,6 @@ class Lord extends SimpleNpc
                       stopMoveAlongThePath();
                       state = LordState.following;
                     }
-                    print("following");
-                    print(currentPath);
                     bool move = myFollowComponent(npc, dtUpdate,
                         closeComponent: (comp) {
                       isInBattle = true;
@@ -292,30 +300,27 @@ class Lord extends SimpleNpc
     }
   }
 
-  // void runAwayFrom(WorldNpcMixin npc) {
-  //   final info = manager.nearestFriendCity(position, faction);
-  //   final cityPosition = info[1] as Vector2;
-  //   final cityName = info[0] as CityName;
-
-  //   if (position.distanceTo(this.position) <
-  //       this.position.distanceTo(npc.position)) {
-  //     moveToPositionAlongThePath(
-  //       cityPosition,
-  //       onFinish: (() => _onEnterCity((info[0] as CityName))),
-  //     );
-  //   }
-  // }
-
   void _checkPower() {
     makeDecision(LordAction.backToManor);
   }
 
-  void patrolAround(Vector2 location) {
+  void patrolAround(Vector2 specPos) {
     print('lord patorl');
-    print(position);
-    state = LordState.moving;
 
-    final location = manager.getCityPosition(manor);
+    state = LordState.moving;
+    Vector2 location;
+    if (manor == CityName.none) {
+      final info = manager.nearestFriendCity(position, faction);
+      location = info[1] as Vector2;
+    } else {
+      location = manager.getCityPosition(manor);
+    }
+
+    if(name == LordName.yasuo) {
+        print("patrol moving");
+        print(location);
+        print(manor);
+      }
 
     if (location == position) {
       state = LordState.patrolling;
@@ -335,6 +340,7 @@ class Lord extends SimpleNpc
 
     if (manor == CityName.none) {
       final info = manager.nearestFriendCity(position, faction);
+      print(info);
       moveToPositionAlongThePath(
         info[1] as Vector2,
         onFinish: (() => _onEnterCity((info[0] as CityName))),
@@ -346,6 +352,11 @@ class Lord extends SimpleNpc
         return;
       }
 
+      if(name == LordName.yasuo) {
+        print("moving");
+        print(cityLocation);
+        print(manor);
+      }
       moveToPositionAlongThePath(cityLocation, onFinish: () {
         _onEnterCity(manor);
       });
@@ -364,7 +375,6 @@ class Lord extends SimpleNpc
     state = LordState.inCity;
     manager.cityMap[cityName]!.enterCity(this);
     print(manager.cityMap[cityName]!.position);
-    print(position);
   }
 }
 
@@ -388,8 +398,8 @@ mixin Myext on Movement {
   bool myFollowComponent(
     GameComponent target,
     double dt, {
-    required Function(GameComponent) closeComponent,
-    required Function(GameComponent) escapeComponent,
+    Function(GameComponent)? closeComponent,
+    Function(GameComponent)? escapeComponent,
     double margin = 10,
     bool debug = false,
   }) {
@@ -402,11 +412,6 @@ mixin Myext on Movement {
     double speed = this.speed * dt;
 
     Rect rectToMove = rectConsideringCollision;
-    if (debug) {
-      print("position: " + position.toString());
-      print("target Pos: " + target.position.toString());
-      print((target as Lord).id == (this as Lord).id);
-    }
 
     translateX = rectToMove.center.dx > centerXPlayer ? (-1 * speed) : speed;
 
@@ -421,12 +426,6 @@ mixin Myext on Movement {
       rectToMove.center.dy,
       centerYPlayer,
     );
-    if (true) {
-      print("follow");
-      print(translateX);
-      print(translateY);
-      print(speed);
-    }
 
     Rect rectPlayerCollision = Rect.fromLTWH(
       comp.left - margin,
@@ -436,12 +435,7 @@ mixin Myext on Movement {
     );
 
     if (rectToMove.overlaps(rectPlayerCollision)) {
-      if (debug) {
-        print("overlap");
-        print("to move: " + rectToMove.toString());
-        print("target: " + rectPlayerCollision.toString());
-      }
-      closeComponent(target);
+      closeComponent?.call(target);
       if (!isIdle) {
         idle();
       }
@@ -451,12 +445,6 @@ mixin Myext on Movement {
     translateX /= dt;
     translateY /= dt;
 
-    print(translateY);
-
-    if (debug) {
-      print("X:" + translateX.toString());
-      print("Y: " + translateY.toString());
-    }
     bool moved = false;
 
     if (translateX > 0 && translateY > 0) {
@@ -487,7 +475,7 @@ mixin Myext on Movement {
 
     if (position.distanceTo(target.position) >= tileSize * 10) {
       print("cannot");
-      escapeComponent(target);
+      escapeComponent?.call(target);
     }
 
     return true;
@@ -568,8 +556,8 @@ mixin Myext on Movement {
   bool runAwayFrom(
     GameComponent target,
     double dt, {
-    required Function(GameComponent) closeComponent,
-    required Function(GameComponent) escapeComponent,
+    Function(GameComponent)? closeComponent,
+    Function(GameComponent)? escapeComponent,
     double margin = 10,
     bool debug = false,
   }) {
@@ -585,13 +573,7 @@ mixin Myext on Movement {
 
     translateX = rectToMove.center.dx > centerXPlayer ? speed : (-1 * speed);
     translateY = rectToMove.center.dy > centerYPlayer ? speed : (-1 * speed);
-    if (true) {
-      print("flee");
-      print(translateX);
-      print(translateY);
-      print(speed);
 
-    }
     Rect rectPlayerCollision = Rect.fromLTWH(
       comp.left - margin,
       comp.top - margin,
@@ -599,7 +581,7 @@ mixin Myext on Movement {
       comp.height + (margin * 2),
     );
     if (rectToMove.overlaps(rectPlayerCollision)) {
-      closeComponent(target);
+      closeComponent?.call(target);
       if (!isIdle) {
         idle();
       }
@@ -609,12 +591,6 @@ mixin Myext on Movement {
     translateX /= dt;
     translateY /= dt;
 
-    print(translateY);
-
-    if (debug) {
-      print("X:" + translateX.toString());
-      print("Y: " + translateY.toString());
-    }
     bool moved = false;
 
     if (translateX > 0 && translateY > 0) {
@@ -644,7 +620,7 @@ mixin Myext on Movement {
     }
     if ((position.distanceTo(target.position) >= tileSize * 12) ||
         !target.isVisible) {
-      escapeComponent(target);
+      escapeComponent?.call(target);
     }
 
     return true;
@@ -867,6 +843,7 @@ mixin MyMoveToPositionAlongThePath on Movement {
   }
 
   List<Offset> _calculatePath(Vector2 finalPosition) {
+
     final player = this;
 
     final positionPlayer = player is ObjectCollision
@@ -918,17 +895,17 @@ mixin MyMoveToPositionAlongThePath on Movement {
     area = Rect.fromLTRB(left, top, right, bottom).inflate(inflate);
 
     for (final e in gameRef.collisions()) {
-      if (!ignoreCollisions.contains(e) && area.overlaps(e.rectCollision)) {
+      if (!ignoreCollisions.contains(e) && area.overlaps(e.rectCollision) && e is! WorldNpcMixin) {
         _addCollisionOffsetsPositionByTile(e.rectCollision);
       }
     }
 
     Iterable<Offset> result = [];
 
-    if (_barriers.contains(targetPosition)) {
-      stopMoveAlongThePath();
-      return [];
-    }
+    // if (_barriers.contains(targetPosition)) {
+    //   stopMoveAlongThePath();
+    //   return [];
+    // }
 
     try {
       result = AStar(
@@ -959,6 +936,7 @@ mixin MyMoveToPositionAlongThePath on Movement {
         _pathLineStrokeWidth,
       ),
     );
+
     return currentPath;
   }
 

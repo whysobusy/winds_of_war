@@ -31,7 +31,6 @@ class _SettingOverlayState extends State<SettingOverlay> {
             OptionButton(text: 'op1', onPressed: () {}),
             OptionButton(text: 'print city', onPressed: () {
               print(manager.gameRef.visibleComponents());
-              print(manager.cityMap.entries.first.value.lordList);
             }),
             OptionButton(text: 'load', onPressed: () {
               manager.save();

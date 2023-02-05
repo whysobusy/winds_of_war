@@ -18,7 +18,7 @@ import 'package:winds_of_war/util/world_timer.dart';
 enum GameState { playing, pause }
 
 class GameManager extends GameComponent {
-  final Map<CityName, City> cityMap = {};
+  final Map<CityName, City?> cityMap = {CityName.none : null};
   final Map<LordName, Lord> lordMap = {};
   final Map<LordName, Lord> lordRestingMap = {};
   final List<Lord> _loserLord = [];
@@ -45,7 +45,9 @@ class GameManager extends GameComponent {
     print("update");
     respawnLord();
     for (final cityName in cityMap.keys) {
-      cityMap[cityName]!.spawnTroops();
+      if (cityName != CityName.none) {
+        cityMap[cityName]!.spawnTroops();
+      }
     }
 
     for (final lordName in lordMap.keys) {
