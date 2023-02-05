@@ -71,7 +71,7 @@ class Lord extends SimpleNpc
   LordAction action = LordAction.idle;
   final CityName manor;
   CityName currentLocation = CityName.none;
-  late Random _random;
+  WorldNpcMixin? currentFollowing;
 
   Lord(
       {required super.position,
@@ -84,7 +84,7 @@ class Lord extends SimpleNpc
               ? EnemySpriteSheet.bossAnimations()
               : EnemySpriteSheet.goblinAnimations(),
           size: Vector2(tileSize * 0.8, tileSize),
-          speed: name == LordName.riven ? tileSize : tileSize * 2,
+          speed: name == LordName.gwen ? tileSize : tileSize * 2,
         ) {
     faction = factionType;
     this.party.addAllUnit(party.units);
@@ -99,23 +99,29 @@ class Lord extends SimpleNpc
         collisions: [
           CollisionArea.rectangle(
             size: Vector2(
-              valueByTileSize(7),
-              valueByTileSize(7),
+              valueByTileSize(16),
+              valueByTileSize(16),
             ),
-            align: Vector2(valueByTileSize(3), valueByTileSize(4)),
+            //align: Vector2(valueByTileSize(3), valueByTileSize(4)),
           ),
         ],
       ),
     );
 
-    setupMoveToPositionAlongThePath(barriersCalculatedColor: Colors.teal.withOpacity(0.3), pathLineColor: Colors.amber, showBarriersCalculated: true);
+    setupMoveToPositionAlongThePath(
+        barriersCalculatedColor: Colors.teal.withOpacity(0.3),
+        pathLineColor: Colors.amber,
+        showBarriersCalculated: true);
   }
 
   @override
   bool onCollision(GameComponent component, bool active) {
     if (component is WorldNpcMixin) {
-      if(manager.isEnemy(component.faction, faction)) {
+      if (manager.isEnemy(component.faction, faction)) {
+        isInBattle = true;
         manager.requestBattle(id, component.id, this);
+        idle();
+        return true;
       }
       return false;
     }
@@ -127,14 +133,6 @@ class Lord extends SimpleNpc
   }
 
   @override
-  Future<void> onLoad() {
-    enabledCheckIsVisible = false;
-    _becomeVisible();
-    _random = Random(Random().nextInt(1000));
-    return super.onLoad();
-  }
-
-  @override
   void update(double dt) {
     if (!isVisible) {
       return;
@@ -143,7 +141,16 @@ class Lord extends SimpleNpc
     super.update(dt);
     if (!isInBattle) {
       if (state == LordState.moving && currentPath.isEmpty) {
-        makeDecision(action);
+        makeDecision(resumeDecision: true);
+      }
+
+      if (state == LordState.following) {
+        if (currentFollowing != null) {
+
+        } else {
+          idle();
+          makeDecision(resumeDecision: true);
+        }
       }
 
       if (state == LordState.patrolling) {
@@ -160,21 +167,15 @@ class Lord extends SimpleNpc
           radiusVision: (tileSize * 15),
           observed: (npcs) {
             for (final npc in npcs) {
-              if (npc != this && manager.isEnemy(faction, npc.faction)) {
+              if (npc != this &&
+                  manager.isEnemy(faction, npc.faction)) {
                 bool move = runAwayFrom(
                   npc,
                   dtUpdate,
-                  closeComponent: (comp) {
-                    isInBattle = true;
-                    print("close request");;
-                    manager.requestBattle(id, (comp as WorldNpcMixin).id, this);
-                    idle();
-                    makeDecision(action);
-                  },
                   escapeComponent: (comp) {
                     print("escape");
                     idle();
-                    makeDecision(action);
+                    makeDecision(resumeDecision: true);
                   },
                 );
                 if (!move) {
@@ -185,7 +186,7 @@ class Lord extends SimpleNpc
             }
             print("default decision");
             idle();
-            makeDecision(action);
+            makeDecision(resumeDecision: true);
             return;
           },
         );
@@ -203,22 +204,16 @@ class Lord extends SimpleNpc
                       stopMoveAlongThePath();
                       state = LordState.following;
                     }
+                    print("ff");
                     bool move = myFollowComponent(npc, dtUpdate,
-                        closeComponent: (comp) {
-                      isInBattle = true;
-                      print("follow request");
-                      manager.requestBattle(
-                          id, (comp as WorldNpcMixin).id, this);
-                      idle();
-                      makeDecision(action);
-                    }, escapeComponent: (comp) {
+                        escapeComponent: (comp) {
                       print("cannot catch");
                       idle();
-                      makeDecision(action);
+                      makeDecision(resumeDecision: true);
                     }, debug: false);
-                    if (!move) {
-                      print("no move");
-                      makeDecision(action);
+                    if(!move) {
+                      idle();
+                      makeDecision(resumeDecision: true);
                     }
                   } else {
                     if (state != LordState.fleeing) {
@@ -231,7 +226,7 @@ class Lord extends SimpleNpc
                   if (state == LordState.following) {
                     print("no move");
                     idle();
-                    makeDecision(action);
+                    makeDecision(resumeDecision: true);
                   }
                 }
                 return;
@@ -256,27 +251,15 @@ class Lord extends SimpleNpc
     }
   }
 
-  void _becomeVisible() {
-    if (!isVisible) {
-      isVisible = true;
-      (gameRef as BonfireGame).addVisible(this);
-    }
-  }
-
-  void _becomeInvisible() {
-    if (isVisible) {
-      isVisible = false;
-      (gameRef as BonfireGame).removeVisible(this);
-    }
-  }
-
-  void makeDecision([LordAction? decision]) {
+  void makeDecision({LordAction? decision, bool resumeDecision = false}) {
     if (state == LordState.inCity) {
       _leaveCity();
     }
 
     if (decision != null) {
       action = decision;
+    } else if (resumeDecision) {
+      action = action;
     } else {
       final rnd = Random();
       action = LordAction.values[rnd.nextInt(2)];
@@ -301,7 +284,7 @@ class Lord extends SimpleNpc
   }
 
   void _checkPower() {
-    makeDecision(LordAction.backToManor);
+    makeDecision(decision: LordAction.backToManor);
   }
 
   void patrolAround(Vector2 specPos) {
@@ -315,12 +298,6 @@ class Lord extends SimpleNpc
     } else {
       location = manager.getCityPosition(manor);
     }
-
-    if(name == LordName.yasuo) {
-        print("patrol moving");
-        print(location);
-        print(manor);
-      }
 
     if (location == position) {
       state = LordState.patrolling;
@@ -340,7 +317,6 @@ class Lord extends SimpleNpc
 
     if (manor == CityName.none) {
       final info = manager.nearestFriendCity(position, faction);
-      print(info);
       moveToPositionAlongThePath(
         info[1] as Vector2,
         onFinish: (() => _onEnterCity((info[0] as CityName))),
@@ -352,11 +328,6 @@ class Lord extends SimpleNpc
         return;
       }
 
-      if(name == LordName.yasuo) {
-        print("moving");
-        print(cityLocation);
-        print(manor);
-      }
       moveToPositionAlongThePath(cityLocation, onFinish: () {
         _onEnterCity(manor);
       });
@@ -364,17 +335,16 @@ class Lord extends SimpleNpc
   }
 
   void _leaveCity() {
-    _becomeVisible();
+    becomeVisible();
     state = LordState.idle;
     manager.cityMap[currentLocation]!.exitCity(this);
   }
 
   void _onEnterCity(CityName cityName) {
-    _becomeInvisible();
+    becomeInvisible();
     currentLocation = cityName;
     state = LordState.inCity;
     manager.cityMap[cityName]!.enterCity(this);
-    print(manager.cityMap[cityName]!.position);
   }
 }
 
@@ -394,13 +364,13 @@ mixin Myext on Movement {
     randomNegativeY = _random.nextBool() ? -1 : 1;
     super.onMount();
   }
-  
+
   bool myFollowComponent(
     GameComponent target,
     double dt, {
     Function(GameComponent)? closeComponent,
     Function(GameComponent)? escapeComponent,
-    double margin = 10,
+    double margin = 0,
     bool debug = false,
   }) {
     final comp = target.rectConsideringCollision;
@@ -483,7 +453,6 @@ mixin Myext on Movement {
 
   static const _KEY_INTERVAL_KEEP_STOPPED = 'INTERVAL_PATROL';
 
-
   bool myPatrol(
     double dt, {
     double margin = 0,
@@ -504,7 +473,7 @@ mixin Myext on Movement {
 
     if (checkInterval(_KEY_INTERVAL_KEEP_STOPPED, 1000, dt)) {
       randomNegativeX = _random.nextBool() ? -1 : 1;
-    randomNegativeY = _random.nextBool() ? -1 : 1;
+      randomNegativeY = _random.nextBool() ? -1 : 1;
     }
 
     double translateX = 0;
@@ -558,7 +527,7 @@ mixin Myext on Movement {
     double dt, {
     Function(GameComponent)? closeComponent,
     Function(GameComponent)? escapeComponent,
-    double margin = 10,
+    double margin = 0,
     bool debug = false,
   }) {
     final comp = target.rectConsideringCollision;
@@ -843,7 +812,6 @@ mixin MyMoveToPositionAlongThePath on Movement {
   }
 
   List<Offset> _calculatePath(Vector2 finalPosition) {
-
     final player = this;
 
     final positionPlayer = player is ObjectCollision
@@ -895,7 +863,9 @@ mixin MyMoveToPositionAlongThePath on Movement {
     area = Rect.fromLTRB(left, top, right, bottom).inflate(inflate);
 
     for (final e in gameRef.collisions()) {
-      if (!ignoreCollisions.contains(e) && area.overlaps(e.rectCollision) && e is! WorldNpcMixin) {
+      if (!ignoreCollisions.contains(e) &&
+          area.overlaps(e.rectCollision) &&
+          e is! WorldNpcMixin) {
         _addCollisionOffsetsPositionByTile(e.rectCollision);
       }
     }
@@ -1058,4 +1028,3 @@ mixin MyMoveToPositionAlongThePath on Movement {
     _linePathComponent = null;
   }
 }
-

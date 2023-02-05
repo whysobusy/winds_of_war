@@ -10,7 +10,7 @@ import 'dart:async' as async;
 
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
 
-enum BattleSide {red, blue}
+enum BattleSide { red, blue }
 
 class BattleField extends GameDecoration with Lighting, ObjectCollision {
   // creator: blueSide
@@ -19,14 +19,15 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
   final List<Party> blueSideArmy = [];
   final List<Party> redSideArmy = [];
 
-  final countDown = Timer(100);
+  final countDown = Timer(20);
 
   final FactionType creatorFaction;
   final String creatorId;
   bool battleStarted = false;
   final GameManager gameManager = BonfireInjector.instance.get();
 
-  BattleField(Vector2 position, {required this.creatorFaction, required this.creatorId})
+  BattleField(Vector2 position,
+      {required this.creatorFaction, required this.creatorId})
       : super.withAnimation(
           animation: GameSpriteSheet.torch(),
           position: position,
@@ -61,54 +62,68 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
     //   startBattle();
     // }
 
+    if (redSide.isNotEmpty && blueSide.isNotEmpty && !battleStarted) {
+      battleStarted = true;
+      startBattle();
+    }
+
     countDown.update(dt);
     if (countDown.finished) {
       redSideArmy.clear();
-    }
 
-    if (redSideArmy.isEmpty) {
-      for (final npc in redSide) {
-        if (npc is Lord) {
-          gameManager.addLoser(npc);
+      if (redSideArmy.isEmpty) {
+        for (final npc in redSide) {
+          if (npc is Lord) {
+            gameManager.addLoser(npc);
+          }
+          npc.removeFromParent();
         }
-        npc.removeFromParent();
+        endBattle();
+        for (final npc in blueSide) {
+          npc.isInBattle = false;
+          npc.becomeVisible();
+          if (npc is Lord) {
+            npc.makeDecision(resumeDecision: true);
+          }
+        }
+        removeFromParent();
       }
-      endBattle();
-      for (final npc in blueSide) {
-        npc.isInBattle = false;
-      }
-      removeFromParent();
-    }
 
-    if (blueSide.isEmpty) {
-      for (final npc in blueSide) {
-        if (npc is Lord) {
-          gameManager.addLoser(npc);
+      if (blueSide.isEmpty) {
+        for (final npc in blueSide) {
+          if (npc is Lord) {
+            gameManager.addLoser(npc);
+          }
+          npc.removeFromParent();
         }
-        npc.removeFromParent();
+        endBattle();
+        for (final npc in redSide) {
+          npc.isInBattle = false;
+          npc.becomeVisible();
+          if (npc is Lord) {
+            npc.makeDecision(resumeDecision: true);
+          }
+        }
+        removeFromParent();
       }
-      endBattle();
-      for (final npc in redSide) {
-        npc.isInBattle = false;
-      }
-      removeFromParent();
     }
     super.update(dt);
   }
 
   @override
   bool onCollision(GameComponent component, bool active) {
-    if (component is Player) {
-      
-    }
+    if (component is Player) {}
     return super.onCollision(component, active);
   }
 
   void startBattle() {
-    const oneSec = Duration(seconds:60);
-    async.Timer.periodic(oneSec, (async.Timer t) {
-      redSideArmy.clear();
-    });
+    for (final npc in blueSide) {
+      npc.becomeInvisible();
+    }
+
+    for (final npc in redSide) {
+      npc.becomeInvisible();
+    }
   }
 
   void endBattle() {
@@ -124,7 +139,9 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
       redSide.add(npc);
       blueSideArmy.add(npc.party);
     }
-    print("blue" + blueSide.toString());
-    print("red" + redSide.toString());
+
+    if(battleStarted) {
+      npc.becomeInvisible();
+    }
   }
 }

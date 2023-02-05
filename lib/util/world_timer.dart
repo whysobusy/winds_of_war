@@ -37,7 +37,7 @@ class WorldTimer {
           onDay?.call();
         }
 
-        if (day % 2 == 0) {
+        if (day % 7 == 0) {
           onWeek?.call();
         }
       }

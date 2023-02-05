@@ -51,7 +51,10 @@ class GameManager extends GameComponent {
     }
 
     for (final lordName in lordMap.keys) {
-      lordMap[lordName]!.makeDecision();
+      final lord = lordMap[lordName]!;
+      if (!lord.isInBattle) {
+        lordMap[lordName]!.makeDecision();
+      }
     }
 
     for (final faction in _factionInfoMap.keys) {
@@ -166,11 +169,12 @@ class GameManager extends GameComponent {
   Map<String, BattleField> battleField = {};
   void requestBattle(String creator, String follower, WorldNpcMixin npc) {
     if (joiner.containsKey(follower)) {
+      debugPrint("join Battle ");
       joiner[follower]!.add(creator);
       battleField[follower]!.enterBattle(npc);
     } else {
       joiner[creator] = [creator];
-      debugPrint("create Battle");
+      debugPrint("create Battle ");
       final battle = BattleField(
           creatorFaction: npc.faction, creatorId: creator, npc.position);
       battle.enterBattle(npc);
@@ -181,8 +185,8 @@ class GameManager extends GameComponent {
 
   void endBattle(String id) {
     joiner.remove(id);
+    battleField[id]!.removeFromParent();
     battleField.remove(id);
-    print('current battle: ' + battleField.keys.toString());
   }
 
   // Factoin
