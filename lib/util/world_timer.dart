@@ -5,12 +5,14 @@ class WorldTimer {
   final double limit = 10;
   VoidCallback? onDay;
   VoidCallback? onWeek;
+  VoidCallback? onMonth;
   double _current = 0;
   bool _running = true;
 
   WorldTimer({
     this.onDay,
     this.onWeek,
+    this.onMonth,
   });
 
   /// The current amount of ms that has passed on this iteration
@@ -37,8 +39,12 @@ class WorldTimer {
           onDay?.call();
         }
 
-        if (day % 7 == 0) {
+        if (day % 2 == 0) {
           onWeek?.call();
+        }
+
+        if (day % 30 == 0) {
+          onMonth?.call();
         }
       }
     }

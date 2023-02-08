@@ -6,6 +6,7 @@ enum FactionType {
   might,
   nature,
   player,
+  falton,
   looter,
   none,
 }

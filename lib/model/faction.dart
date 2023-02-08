@@ -54,7 +54,7 @@ class Faction {
   static Map<FactionType, Faction> getFactionMap() {
     return {
       FactionType.chaos:
-          Faction(FactionType.chaos, isAtWar: [FactionType.order], lords: [LordName.riven], cities: [CityName.cityB]),
+          Faction(FactionType.chaos, isAtWar: [FactionType.order], lords: [LordName.riven, LordName.yasuo], cities: [CityName.cityB]),
       FactionType.order:
           Faction(FactionType.order, isAtWar: [FactionType.chaos], lords: [LordName.gwen], cities: [CityName.cityA]),
       FactionType.death:

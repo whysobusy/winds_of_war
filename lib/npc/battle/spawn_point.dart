@@ -2,7 +2,7 @@ import 'package:bonfire/bonfire.dart';
 import 'package:winds_of_war/main.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
-import 'package:winds_of_war/units/battle/goblin.dart';
+import 'package:winds_of_war/npc/battle/goblin.dart';
 
 abstract class SpawnPoint extends GameDecoration {
   final Party troop;

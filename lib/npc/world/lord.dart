@@ -9,6 +9,7 @@ import 'package:winds_of_war/main.dart';
 import 'package:winds_of_war/manager/game_manager.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
+import 'package:winds_of_war/npc/world/battle_field.dart';
 import 'package:winds_of_war/util/enemy_sprite_sheet.dart';
 import 'package:winds_of_war/util/functions.dart';
 import 'package:winds_of_war/util/mixins/faction_mixin.dart';
@@ -28,6 +29,7 @@ enum LordState {
   moving,
   patrolling,
   inCity,
+  rallying,
   following,
   fleeing,
 }
@@ -35,8 +37,9 @@ enum LordState {
 enum LordAction {
   patrolAround,
   backToManor,
-  attack,
-  joinMarshall,
+  attackCity,
+  joinRally,
+  rally,
   idle,
 }
 
@@ -44,6 +47,7 @@ class Lord extends SimpleNpc
     with
         FactionMixin,
         AutomaticRandomMovement,
+        WorldObjectMixin,
         WorldNpcMixin,
         MyMoveToPositionAlongThePath,
         ObjectCollision,
@@ -71,7 +75,11 @@ class Lord extends SimpleNpc
   LordAction action = LordAction.idle;
   final CityName manor;
   CityName currentLocation = CityName.none;
-  WorldNpcMixin? currentFollowing;
+  WorldObjectMixin? currentFollowing;
+  Lord? currentLeader;
+  final List<Party> followingParty = [];
+  final List<LordName> followingLord = [];
+  int waitForLordsCount = 0;
 
   Lord(
       {required super.position,
@@ -84,7 +92,7 @@ class Lord extends SimpleNpc
               ? EnemySpriteSheet.bossAnimations()
               : EnemySpriteSheet.goblinAnimations(),
           size: Vector2(tileSize * 0.8, tileSize),
-          speed: name == LordName.gwen ? tileSize : tileSize * 2,
+          speed: name == LordName.gwen ? tileSize * 2 : tileSize,
         ) {
     faction = factionType;
     this.party.addAllUnit(party.units);
@@ -116,14 +124,31 @@ class Lord extends SimpleNpc
 
   @override
   bool onCollision(GameComponent component, bool active) {
-    if (component is WorldNpcMixin) {
-      if (manager.isEnemy(component.faction, faction)) {
-        isInBattle = true;
-        manager.requestBattle(id, component.id, this);
-        idle();
-        return true;
+    if (!isInBattle) {
+
+      if (component is WorldNpcMixin) {
+        if (manager.isEnemy(this, component) && !component.isRemoving) {
+          print("request ID: " + id);
+          print("follow ID: " + component.id);
+          print(component);
+          manager.createBattle(id, component.id, this, component);
+          idle();
+          return true;
+        }
+        return false;
       }
-      return false;
+
+      if (component is WorldBattleMixin) {
+        if (manager.isEnemy(this, component) && !component.isRemoving) {
+          print("request ID: " + id);
+          print("follow ID: " + component.id);
+          print(component);
+          manager.joinBattle(component.id, this);
+          idle();
+          return true;
+        }
+        return false;
+      }
     }
 
     if (component is Player) {
@@ -140,16 +165,9 @@ class Lord extends SimpleNpc
 
     super.update(dt);
     if (!isInBattle) {
-      if (state == LordState.moving && currentPath.isEmpty) {
-        makeDecision(resumeDecision: true);
-      }
-
-      if (state == LordState.following) {
-        if (currentFollowing != null) {
-
-        } else {
-          idle();
-          makeDecision(resumeDecision: true);
+      if (state == LordState.rallying) {
+        if (waitForLordsCount == followingLord.length) {
+          makeDecision(decision: LordAction.attackCity);
         }
       }
 
@@ -162,13 +180,69 @@ class Lord extends SimpleNpc
           //initRandom: _random,
         );
       }
+
+      if (isVisible &&
+          state != LordState.fleeing &&
+          state != LordState.following) {
+        // observing surrounding npc
+        seeComponentType<WorldObjectMixin>(
+          radiusVision: (tileSize * 10),
+          observed: (objects) {
+            for (final object in objects) {
+              if (object != this && manager.isEnemy(this, object)) {
+                stopMoveAlongThePath();
+                if (object.beatable(this)) {
+                  state = LordState.following;
+                  currentFollowing = object;
+                  return;
+                } else {
+                  if (object is WorldNpcMixin) {
+                    state = LordState.fleeing;
+                    return;
+                  }
+                }
+              }
+            }
+          },
+        );
+      }
+
+      if (state == LordState.following) {
+        seeComponentType<WorldObjectMixin>(
+            radiusVision: (tileSize * 10),
+            observed: (objects) {
+              bool tracked = false;
+
+              for (final object in objects) {
+                if (object == currentFollowing) {
+                  tracked = true;
+                } else {
+                  if (objects is WorldNpcMixin &&
+                      manager.isEnemy(this, object)) {
+                    if (!object.beatable(this)) {
+                      state = LordState.fleeing;
+                      return;
+                    }
+                  }
+                }
+              }
+
+              if (tracked) {
+                bool move = myFollowComponent(currentFollowing!, dtUpdate);
+              } else {
+                currentFollowing = null;
+                idle();
+                makeDecision(resumeDecision: true);
+              }
+            });
+      }
+
       if (state == LordState.fleeing) {
         seeComponentType<WorldNpcMixin>(
           radiusVision: (tileSize * 15),
           observed: (npcs) {
             for (final npc in npcs) {
-              if (npc != this &&
-                  manager.isEnemy(faction, npc.faction)) {
+              if (npc != this && manager.isEnemy(this, npc)) {
                 bool move = runAwayFrom(
                   npc,
                   dtUpdate,
@@ -191,56 +265,6 @@ class Lord extends SimpleNpc
           },
         );
       }
-
-      if (isVisible && state != LordState.fleeing) {
-        seeComponentType<WorldNpcMixin>(
-          radiusVision: (tileSize * 13),
-          observed: (npcs) {
-            for (final npc in npcs) {
-              if (npc != this && manager.isEnemy(faction, npc.faction)) {
-                if (npc.distance(this) < tileSize * 9) {
-                  if (isStrongerThan(npc)) {
-                    if (state != LordState.following) {
-                      stopMoveAlongThePath();
-                      state = LordState.following;
-                    }
-                    print("ff");
-                    bool move = myFollowComponent(npc, dtUpdate,
-                        escapeComponent: (comp) {
-                      print("cannot catch");
-                      idle();
-                      makeDecision(resumeDecision: true);
-                    }, debug: false);
-                    if(!move) {
-                      idle();
-                      makeDecision(resumeDecision: true);
-                    }
-                  } else {
-                    if (state != LordState.fleeing) {
-                      stopMoveAlongThePath();
-                      state = LordState.fleeing;
-                    }
-                    //runAwayFrom(npc);
-                  }
-                } else {
-                  if (state == LordState.following) {
-                    print("no move");
-                    idle();
-                    makeDecision(resumeDecision: true);
-                  }
-                }
-                return;
-              }
-            }
-          },
-          notObserved: () {
-            if (!isIdle) {
-              idle();
-            }
-            print("not ob");
-          },
-        );
-      }
     }
   }
 
@@ -255,6 +279,9 @@ class Lord extends SimpleNpc
     if (state == LordState.inCity) {
       _leaveCity();
     }
+    if (action == LordAction.rally && decision == null || action == LordAction.joinRally) {
+      return;
+    }
 
     if (decision != null) {
       action = decision;
@@ -266,10 +293,17 @@ class Lord extends SimpleNpc
     }
 
     switch (action) {
-      case LordAction.attack:
+      case LordAction.attackCity:
+        makeAttackPlan();
+        break;
       case LordAction.idle:
-      case LordAction.joinMarshall:
         _checkPower();
+        break;
+      case LordAction.joinRally:
+        joinRally();
+        break;
+      case LordAction.rally:
+        rally();
         break;
       case LordAction.patrolAround:
         // TODO
@@ -285,6 +319,70 @@ class Lord extends SimpleNpc
 
   void _checkPower() {
     makeDecision(decision: LordAction.backToManor);
+  }
+
+  void makeAttackPlan() {
+    state = LordState.moving;
+    print("attack");
+    final city = manager.cityMap[CityName.cityA]!;
+    moveToPositionAlongThePath(city.position, onFinish: () {
+      manager.createCityBattle(id, city, this);
+    });
+  }
+
+  void rally() {
+    // only strong lord can rally
+    // must have manor
+    state = LordState.moving;
+    final cityLocation = manager.getCityPosition(manor);
+    if (cityLocation == position) {
+      state = LordState.rallying;
+      waitForAllies();
+      return;
+    }
+
+    moveToPositionAlongThePath(cityLocation, onFinish: () {
+      state = LordState.rallying;
+      currentLeader = this;
+      waitForAllies();
+    });
+  }
+
+  void waitForAllies() {
+    // TODO must wait for all allies or timeout
+    final lords = manager.factionInfoMap[faction]!.lords;
+    waitForLordsCount = 0;
+    for (final lordName in lords) {
+      final lord = manager.lordMap[lordName];
+      waitForLordsCount += lord?.askForHelp(this) ?? 0;
+    }
+  }
+
+  int askForHelp(Lord npc) {
+    // TODO
+    if (npc == this) {
+      return 0;
+    }
+
+
+    if (true) {
+      currentLeader = npc;
+      makeDecision(decision: LordAction.joinRally);
+      return 1;
+    }
+    return 0;
+  }
+
+  void joinRally() {
+    state = LordState.moving;
+    moveToPositionAlongThePath(currentLeader!.position, onFinish: () {
+      state = LordState.rallying;
+      currentLeader!.followingParty.add(party);
+      currentLeader!.followingLord.add(name);
+      manager.addFollowLord(currentLeader!.name, this);
+      removeFromParent();
+      debugPrint("arrive rally");
+    });
   }
 
   void patrolAround(Vector2 specPos) {

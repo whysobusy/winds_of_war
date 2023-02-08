@@ -1,7 +1,7 @@
 import 'package:bonfire/bonfire.dart';
 import 'package:equatable/equatable.dart';
 import 'package:winds_of_war/model/enum.dart';
-import 'package:winds_of_war/units/battle/goblin.dart';
+import 'package:winds_of_war/npc/battle/goblin.dart';
 
 class Party {
   final List<Unit> units;

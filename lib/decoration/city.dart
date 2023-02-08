@@ -2,7 +2,7 @@ import 'package:bonfire/bonfire.dart';
 import 'package:winds_of_war/interface/city_overlay.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
-import 'package:winds_of_war/units/world/lord.dart';
+import 'package:winds_of_war/npc/world/lord.dart';
 import 'package:winds_of_war/util/extensions.dart';
 import 'package:winds_of_war/util/mixins/faction_mixin.dart';
 
@@ -12,10 +12,11 @@ enum CityState {
 }
 
 class City extends GameDecoration with ObjectCollision, FactionMixin {
-  final Map<LordName, Party> troops = {};
-  final List<LordName> lordList = [];
+  final List<Lord> lordList = [];
+  final Party party;
   final CityName name;
-  final LordName owner;
+  LordName owner;
+  bool isInBattle = false;
 
   City(
       {required super.position,
@@ -23,7 +24,7 @@ class City extends GameDecoration with ObjectCollision, FactionMixin {
       required this.name,
       required this.owner,
       required FactionType faction,
-      required Party party}) {
+      required this.party}) {
     this.faction = faction;
     setupCollision(
       CollisionConfig(
@@ -35,17 +36,16 @@ class City extends GameDecoration with ObjectCollision, FactionMixin {
         ],
       ),
     );
-    troops[LordName.city] = party;
   }
 
   @override
   bool onCollision(GameComponent component, bool active) {
     if (component is FactionMixin) {
       if (component is Player) {
-        if (manager.isEnemy(this.faction, component.faction)) {
+        if (false) {
           gameRef.player!.idle();
           context.goTo(CityWarMenu(
-            cityParty: troops[LordName.city]!,
+            cityParty: party,
           ));
         } else {
           gameRef.player!.idle();
@@ -60,12 +60,11 @@ class City extends GameDecoration with ObjectCollision, FactionMixin {
 
   void enterCity(Lord lord) {
     print('enter city');
-    lordList.add(lord.name);
-    troops[lord.name] = lord.party;
+    // in battle TODO
+    lordList.add(lord);
   }
 
   void exitCity(Lord lord) {
-    lordList.remove(lord.name);
-    troops.remove(lord.name);
+    lordList.remove(lord);
   }
 }

@@ -3,14 +3,32 @@ import 'dart:math';
 import 'package:bonfire/bonfire.dart';
 import 'package:bonfire/mixins/direction_animation.dart';
 import 'package:winds_of_war/manager/game_manager.dart';
+import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/util/mixins/faction_mixin.dart';
 
-mixin WorldNpcMixin on Npc, AutomaticRandomMovement, DirectionAnimation, FactionMixin {
-
+mixin WorldObjectMixin on FactionMixin {
   String id = "default";
 
-  bool isInBattle = false;
+  bool beatable(WorldNpcMixin attacker) {
+    return true;
+  }
+}
+
+mixin WorldBattleMixin on WorldObjectMixin {
+  FactionType blueSideFaction = FactionType.none;
+  FactionType redSideFactoin = FactionType.none;
+
+  @override
+  bool beatable(WorldNpcMixin attacker) {
+    return true;
+  }
+}
+
+
+mixin WorldNpcMixin on DirectionAnimation, WorldObjectMixin {
+bool isInBattle = false;
+  String? battleId;
 
   final Party party = Party();
 
@@ -21,19 +39,9 @@ mixin WorldNpcMixin on Npc, AutomaticRandomMovement, DirectionAnimation, Faction
     return super.onLoad();
   }
   
-
-  void patrol(double dt, double speed) {
-    runRandomMovement(
-          dt,
-          runOnlyVisibleInCamera: false,
-          speed: speed,
-          maxDistance: 128,
-          minDistance: 64,
-        );
-  }
-
-  bool isStrongerThan(WorldNpcMixin npc) {
-    return party.units.length >= npc.party.units.length;
+  @override
+  bool beatable(WorldNpcMixin attacker) {
+    return attacker.party.units.length >= party.units.length;
   }
 
 

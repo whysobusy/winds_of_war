@@ -10,34 +10,44 @@ import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/faction.dart';
 import 'package:winds_of_war/model/player_info.dart';
 import 'package:winds_of_war/model/unit.dart';
-import 'package:winds_of_war/units/world/battle_field.dart';
-import 'package:winds_of_war/units/world/lord.dart';
+import 'package:winds_of_war/npc/world/battle_field.dart';
+import 'package:winds_of_war/npc/world/lord.dart';
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
 import 'package:winds_of_war/util/world_timer.dart';
 
 enum GameState { playing, pause }
 
 class GameManager extends GameComponent {
-  final Map<CityName, City?> cityMap = {CityName.none : null};
+  final Map<CityName, City?> cityMap = {CityName.none: null};
   final Map<LordName, Lord> lordMap = {};
   final Map<LordName, Lord> lordRestingMap = {};
   final List<Lord> _loserLord = [];
+  final Map<LordName, List<Lord>> _followingLords = {};
   late final WorldTimer timer;
   final uuid = Uuid();
 
-  final _factionInfoMap = Faction.getFactionMap();
+  final factionInfoMap = Faction.getFactionMap();
 
   GameManager() {
     timer = WorldTimer(
         onDay: () {
           print("day: " + timer.day.toString());
         },
-        onWeek: updateMap);
+        onWeek: updateMap,
+        onMonth: updateFaction);
   }
 
   void initGame() {
     debugPrint("init game");
     updateMap();
+  }
+
+  void clearGame() {}
+
+  void updateFaction() {
+    for (final faction in factionInfoMap.values) {
+      faction.makeDecision();
+    }
   }
 
   void updateMap() {
@@ -52,19 +62,34 @@ class GameManager extends GameComponent {
 
     for (final lordName in lordMap.keys) {
       final lord = lordMap[lordName]!;
-      if (!lord.isInBattle) {
-        lordMap[lordName]!.makeDecision();
+      if (!lord.isInBattle &&
+          lord.action != LordAction.rally &&
+          lord.action != LordAction.attackCity) {
+        if (false) {
+          lordMap[lordName]!.makeDecision(decision: LordAction.rally);
+        } else {
+          lordMap[lordName]!.makeDecision();
+        }
       }
     }
 
-    for (final faction in _factionInfoMap.keys) {
-      _factionInfoMap[faction]!.makeDecision();
+    for (final faction in factionInfoMap.keys) {
+      factionInfoMap[faction]!.makeDecision();
     }
   }
 
   void addLoser(Lord lord) {
     unregisterLord(lord);
     _loserLord.add(lord);
+  }
+
+  void addFollowLord(LordName leaderName, Lord lord) {
+    unregisterLord(lord);
+    if (_followingLords.containsKey(leaderName)) {
+      _followingLords[leaderName]!.add(lord);
+    } else {
+      _followingLords[leaderName] = [lord];
+    }
   }
 
   void respawnLord() {
@@ -79,8 +104,28 @@ class GameManager extends GameComponent {
           name: lord.name,
           manor: lord.manor,
           party: lord.party);
+
       gameRef.add(newLord);
       registerLord(newLord);
+
+      if (_followingLords.containsKey(lord.name)) {
+        for (final followingLord in _followingLords[lord.name]!) {
+          final respawnPosition = followingLord.manor == CityName.none
+              ? nearestFriendCity(
+                  followingLord.position, followingLord.faction)[1] as Vector2
+              : cityMap[followingLord.manor]!.position;
+          final newFollowLord = Lord(
+              position: respawnPosition,
+              factionType: followingLord.faction,
+              name: followingLord.name,
+              manor: followingLord.manor,
+              party: followingLord.party);
+
+          gameRef.add(newFollowLord);
+          registerLord(newFollowLord);
+        }
+      }
+      _followingLords.remove(lord.name);
     }
     _loserLord.clear();
   }
@@ -103,7 +148,7 @@ class GameManager extends GameComponent {
   }
 
   List nearestFriendCity(Vector2 currentPosition, FactionType factionType) {
-    final faction = _factionInfoMap[factionType];
+    final faction = factionInfoMap[factionType];
     double minDist = 9999;
     Vector2? nearestLoction;
     CityName nearestCity = CityName.none;
@@ -165,46 +210,65 @@ class GameManager extends GameComponent {
   void removeUnit(Unit unit) => _debugInfo.removeUnit(unit);
 
   // battle
-  Map<String, List<String>> joiner = {};
   Map<String, BattleField> battleField = {};
-  void requestBattle(String creator, String follower, WorldNpcMixin npc) {
-    if (joiner.containsKey(follower)) {
-      debugPrint("join Battle ");
-      joiner[follower]!.add(creator);
-      battleField[follower]!.enterBattle(npc);
-    } else {
-      joiner[creator] = [creator];
-      debugPrint("create Battle ");
-      final battle = BattleField(
-          creatorFaction: npc.faction, creatorId: creator, npc.position);
-      battle.enterBattle(npc);
-      battleField[creator] = battle;
-      gameRef.add(battle);
-    }
-  }
 
   void endBattle(String id) {
-    joiner.remove(id);
     battleField[id]!.removeFromParent();
     battleField.remove(id);
   }
 
+  void createBattle(
+      String id1, String id2, WorldNpcMixin npc1, WorldNpcMixin npc2) {
+    final id = id1 + id2;
+    final battle = BattleField(npc1.position,
+        blueSideFaction: npc1.faction, redSideFactoin: npc2.faction, id: id);
+    battleField[id] = battle;
+    battle.enterBattle(npc1);
+    battle.enterBattle(npc2);
+    battle.startBattle();
+    gameRef.add(battle);
+  }
+
+  void createCityBattle(String lordId, City city, Lord attackLeader) {
+    final battle = BattleField(city.position,
+        blueSideFaction: attackLeader.faction,
+        redSideFactoin: city.faction,
+        id: lordId);
+    battleField[lordId] = battle;
+
+    battle.enterBattleSige(attackLeader);
+    battle.enterBattleCity(city);
+    battle.startBattle();
+    gameRef.add(battle);
+  }
+
+  void joinBattle(String battleId, WorldNpcMixin npc) {
+    battleField[battleId]!.enterBattle(npc);
+  }
+
   // Factoin
-  Relation relation(FactionType a, FactionType b) {
-    if (a == b || isFriend(a, b)) {
-      return Relation.ally;
-    } else if (isEnemy(a, b)) {
-      return Relation.atWar;
+  // Relation relation(FactionType a, FactionType b) {
+  //   if (a == b || isFriend(a, b)) {
+  //     return Relation.ally;
+  //   } else if (isEnemy(a, b)) {
+  //     return Relation.atWar;
+  //   } else {
+  //     return Relation.neutral;
+  //   }
+  // }
+
+  bool isEnemy(WorldObjectMixin origin, WorldObjectMixin target) {
+    if (target is WorldNpcMixin) {
+      return factionInfoMap[origin.faction]!.isAtWar.contains(target.faction);
+    } else if (target is WorldBattleMixin) {
+      return factionInfoMap[origin.faction]!
+              .isAtWar
+              .contains(target.blueSideFaction) ||
+          factionInfoMap[origin.faction]!
+              .isAtWar
+              .contains(target.redSideFactoin);
     } else {
-      return Relation.neutral;
+      return false;
     }
-  }
-
-  bool isFriend(FactionType a, FactionType b) {
-    return _factionInfoMap[a]!.allies.contains(b);
-  }
-
-  bool isEnemy(FactionType a, FactionType b) {
-    return _factionInfoMap[a]!.isAtWar.contains(b);
   }
 }

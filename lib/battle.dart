@@ -10,15 +10,15 @@ import 'package:winds_of_war/manager/game_manager.dart';
 import 'package:winds_of_war/model/player_info.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/player/knight.dart';
-import 'package:winds_of_war/units/battle/imp.dart';
-import 'package:winds_of_war/units/battle/mini_boss.dart';
-import 'package:winds_of_war/units/battle/spawn_point.dart';
+import 'package:winds_of_war/npc/battle/imp.dart';
+import 'package:winds_of_war/npc/battle/mini_boss.dart';
+import 'package:winds_of_war/npc/battle/spawn_point.dart';
 import 'package:winds_of_war/util/dialogs.dart';
 import 'package:winds_of_war/util/extensions.dart';
 import 'package:winds_of_war/util/sounds.dart';
 import 'package:winds_of_war/winds_of_war.dart';
 
-import 'units/battle/goblin.dart';
+import 'npc/battle/goblin.dart';
 
 class Battle extends StatefulWidget {
   static bool useJoystick = false;

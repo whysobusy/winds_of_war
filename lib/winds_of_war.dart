@@ -13,10 +13,8 @@ import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/player/knight.dart';
 import 'package:winds_of_war/player/player_world.dart';
-import 'package:winds_of_war/units/world/exit_map_sensor.dart';
-import 'package:winds_of_war/units/world/farmer.dart';
-import 'package:winds_of_war/units/world/guard.dart';
-import 'package:winds_of_war/units/world/lord.dart';
+import 'package:winds_of_war/npc/world/exit_map_sensor.dart';
+import 'package:winds_of_war/npc/world/lord.dart';
 import 'package:winds_of_war/util/dialogs.dart';
 import 'package:winds_of_war/util/extensions.dart';
 import 'package:winds_of_war/util/sounds.dart';
@@ -126,9 +124,6 @@ class _WindsOfWarState extends State<WindsOfWar> implements GameListener {
               _gameManager.registerLord(lord);
               return lord;
             },
-            'guard': (p) => Guard(p.position, (v) => _enterBattle(v, context)),
-            'farmer': (p) =>
-                Farmer(p.position, (v) => _enterBattle(v, context)),
             'city': (p) {
               final city = City(
                   position: p.position,

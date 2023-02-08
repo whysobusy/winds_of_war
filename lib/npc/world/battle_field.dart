@@ -1,18 +1,27 @@
 import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart';
+import 'package:winds_of_war/decoration/city.dart';
 import 'package:winds_of_war/main.dart';
 import 'package:winds_of_war/manager/game_manager.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
-import 'package:winds_of_war/units/world/lord.dart';
+import 'package:winds_of_war/npc/world/lord.dart';
 import 'package:winds_of_war/util/game_sprite_sheet.dart';
+import 'package:winds_of_war/util/mixins/faction_mixin.dart';
 import 'dart:async' as async;
 
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
 
 enum BattleSide { red, blue }
+enum BattleType { city, normal}
 
-class BattleField extends GameDecoration with Lighting, ObjectCollision {
+class BattleField extends GameDecoration
+    with
+        Lighting,
+        ObjectCollision,
+        FactionMixin,
+        WorldObjectMixin,
+        WorldBattleMixin {
   // creator: blueSide
   final List<WorldNpcMixin> blueSide = [];
   final List<WorldNpcMixin> redSide = [];
@@ -20,19 +29,19 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
   final List<Party> redSideArmy = [];
 
   final countDown = Timer(20);
-
-  final FactionType creatorFaction;
-  final String creatorId;
   bool battleStarted = false;
   final GameManager gameManager = BonfireInjector.instance.get();
 
   BattleField(Vector2 position,
-      {required this.creatorFaction, required this.creatorId})
+      {required FactionType blueSideFaction,
+      required FactionType redSideFactoin,
+      required String id})
       : super.withAnimation(
           animation: GameSpriteSheet.torch(),
           position: position,
           size: Vector2.all(tileSize),
         ) {
+    this.id = id;
     setupLighting(
       LightingConfig(
         radius: width * 2.5,
@@ -55,18 +64,6 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
 
   @override
   void update(double dt) {
-    // print('updating');
-    // if (redSideArmy.isNotEmpty && blueSideArmy.isNotEmpty && !battleStarted) {
-    //   print('battleStarted');
-    //   battleStarted = true;
-    //   startBattle();
-    // }
-
-    if (redSide.isNotEmpty && blueSide.isNotEmpty && !battleStarted) {
-      battleStarted = true;
-      startBattle();
-    }
-
     countDown.update(dt);
     if (countDown.finished) {
       redSideArmy.clear();
@@ -113,6 +110,19 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
   @override
   bool onCollision(GameComponent component, bool active) {
     if (component is Player) {}
+    // if (component is WorldNpcMixin) {
+    //   print('coll');
+    //   gameManager.requestBattle(component.id, creatorId, component);
+
+    //   print("blue: ");
+    //   for (final npc in blueSide) {
+    //     print((npc as Lord).name);
+    //   }
+    //   print("red: ");
+    //   for (final npc in redSide) {
+    //     print((npc as Lord).name);
+    //   }
+    // }
     return super.onCollision(component, active);
   }
 
@@ -124,23 +134,49 @@ class BattleField extends GameDecoration with Lighting, ObjectCollision {
     for (final npc in redSide) {
       npc.becomeInvisible();
     }
+    battleStarted = true;
   }
 
   void endBattle() {
-    gameManager.endBattle(creatorId);
+    gameManager.endBattle(id);
     print("endBattle");
   }
 
+  void enterBattleCity(City city) {
+    city.isInBattle = true;
+    redSideArmy.add(city.party);
+    for (final lord in city.lordList) {
+      lord.isInBattle = true;
+      lord.battleId = id;
+      redSide.add(lord);
+      redSideArmy.add(lord.party);
+    }
+  }
+
+  void enterBattleSige(Lord attackLeader) {
+    attackLeader.isInBattle = true;
+    attackLeader.battleId = id;
+
+    blueSide.add(attackLeader);
+    blueSideArmy.add(attackLeader.party);
+
+    for (final party in attackLeader.followingParty) {
+      blueSideArmy.add(attackLeader.party);
+    }
+  }
+
   void enterBattle(WorldNpcMixin npc) {
-    if (npc.faction == creatorFaction) {
+    npc.isInBattle = true;
+    npc.battleId = id;
+    if (npc.faction == blueSideFaction) {
       blueSide.add(npc);
       blueSideArmy.add(npc.party);
     } else {
       redSide.add(npc);
-      blueSideArmy.add(npc.party);
+      redSideArmy.add(npc.party);
     }
 
-    if(battleStarted) {
+    if (battleStarted) {
       npc.becomeInvisible();
     }
   }
