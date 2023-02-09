@@ -8,9 +8,17 @@
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
+        "alives_orcs.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
         "alives_orcs.tsj": {
             "scaleInDock": 1,
             "scaleInEditor": 1
+        },
+        "alives_other.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1.5
         },
         "alives_other.tsj": {
             "scaleInDock": 1,
@@ -172,7 +180,7 @@
             "scale": 1.5,
             "selectedLayer": 5,
             "viewCenter": {
-                "x": 532,
+                "x": 528,
                 "y": 143
             }
         },
@@ -204,6 +212,10 @@
             "scaleInDock": 1,
             "scaleInEditor": 1
         },
+        "things.json": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
         "things.tsj": {
             "scaleInDock": 1,
             "scaleInEditor": 1
@@ -222,25 +234,23 @@
     "map.tileWidth": 16,
     "map.width": 500,
     "openFiles": [
-        "norhan.json",
-        "terrain.json",
-        "buildings.json"
+        "norhan.json"
     ],
     "project": "winds_of_war.tiled-project",
     "property.type": "string",
     "recentFiles": [
-        "buildings.json",
-        "terrain.json",
         "norhan.json",
+        "alives_orcs.json",
+        "alives_other.json",
+        "things.json",
+        "terrain.json",
+        "buildings.json",
         "norhan_origin.json",
         "terrain.tsj",
         "nature.tsj",
         "buildings.tsj",
         "terrain_decor.tsj",
-        "walls.tsj",
-        "things.tsj",
-        "indoor_things.tsj",
-        "alives_other.tsj"
+        "walls.tsj"
     ],
     "tileset.lastUsedFormat": "json",
     "tileset.tileSize": {

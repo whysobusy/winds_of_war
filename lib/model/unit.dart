@@ -1,6 +1,7 @@
 import 'package:bonfire/bonfire.dart';
 import 'package:equatable/equatable.dart';
 import 'package:winds_of_war/model/enum.dart';
+import 'package:winds_of_war/npc/battle/arthax.dart';
 import 'package:winds_of_war/npc/battle/goblin.dart';
 
 class Party {
@@ -42,12 +43,10 @@ abstract class Unit extends Equatable{
   final UnitType type;
   final double exp;
   final StatData statData;
-  final FactionType faction;
   int level = 1;
 
   Unit(
       {required this.type,
-      required this.faction,
       required this.statData,
       this.exp = 0});
 
@@ -57,12 +56,28 @@ abstract class Unit extends Equatable{
   List<Object> get props => [type];
 }
 
+class ArthaxUnit extends Unit {
+  ArthaxUnit()
+      : super(
+            statData: StatData(attack: 30, defence: 30, life: 100),
+            type: UnitType.arthax,);
+
+  @override
+  Npc toSprite(BattleType battleType, Vector2 initPosition) {
+    switch (battleType) {
+      case BattleType.ally:
+        return Arthax(initPosition);
+      case BattleType.enemy:
+        return Arthax(initPosition);
+    }
+  }
+}
+
 class GoblinUnit extends Unit {
   GoblinUnit()
       : super(
             statData: StatData(attack: 30, defence: 30, life: 100),
-            type: UnitType.goblin,
-            faction: FactionType.chaos);
+            type: UnitType.goblin,);
 
   @override
   Npc toSprite(BattleType battleType, Vector2 initPosition) {

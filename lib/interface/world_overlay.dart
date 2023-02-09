@@ -48,7 +48,7 @@ class _WorldOverlayState extends State<WorldOverlay> {
                       text: "Inventory",
                       onPressed: () {
                         context.goTo(SettingOverlay(
-                          info: _gameManager.getPlayerInfo(),
+                          info: _gameManager.getPlayerInitInfo(),
                         ));
                       }),
                   OptionButton(
@@ -65,9 +65,9 @@ class _WorldOverlayState extends State<WorldOverlay> {
                         ));
                       }),
                   OptionButton(text: "setting", onPressed: () {
-                    _gameManager.pauseGame();
+                    _gameManager.playerEnterMenu();
                     context.goTo(SettingOverlay(
-                          info: _gameManager.getPlayerInfo(),
+                          info: _gameManager.getPlayerInitInfo(),
                         ));
                   }),
                 ],

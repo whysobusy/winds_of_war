@@ -74,7 +74,10 @@ flutter:
     - assets/
     - assets/images/
     - assets/images/emote/
-    - assets/images/npc/
+    - assets/images/Champions/
+    - assets/images/Monsters/
+    - assets/images/Soldiers/
+    - assets/images/Workers/
     - assets/images/enemy/
     - assets/images/enemy/goblin/
     - assets/images/enemy/imp/

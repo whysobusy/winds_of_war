@@ -107,7 +107,7 @@ class _WindsOfWarState extends State<WindsOfWar> implements GameListener {
         joystick: joystick,
         showCollisionArea: true,
         player: PlayerWorld(
-          info: _gameManager.getPlayerInfo(),
+          info: _gameManager.getPlayerInitInfo(),
           Vector2(2 * tileSize, 3 * tileSize),
         ),
         map: WorldMapByTiled(
@@ -120,7 +120,7 @@ class _WindsOfWarState extends State<WindsOfWar> implements GameListener {
                   factionType: FactionType.values.byName(p.others['faction_type']),
                   name: LordName.values.byName(p.others['lord_name']),
                   manor: CityName.values.byName(p.others['manor']),
-                  party: Party(units: [GoblinUnit()]));
+                  party: Party(units: [ArthaxUnit()]));
               _gameManager.registerLord(lord);
               return lord;
             },
@@ -165,11 +165,11 @@ class _WindsOfWarState extends State<WindsOfWar> implements GameListener {
   }
 
   final Party troop = Party(units: [GoblinUnit()]);
-  void _enterBattle(String value, BuildContext context) {
-    context.goTo(Battle(
-      troop: troop,
-    ));
-  }
+  // void _enterBattle(String value, BuildContext context) {
+  //   context.goTo(Battle(
+  //     troop: troop,
+  //   ));
+  // }
 
   void _showDialogGameOver() {
     setState(() {

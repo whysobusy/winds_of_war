@@ -5,7 +5,7 @@ import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/npc/battle/goblin.dart';
 
 abstract class SpawnPoint extends GameDecoration {
-  final Party troop;
+  final List<Party> troop;
   SpawnPoint(Vector2 position, Vector2 size, {required this.troop})
       : super(
           position: position,
@@ -22,7 +22,7 @@ abstract class SpawnPoint extends GameDecoration {
 }
 
 class EnemySpawnPoint extends SpawnPoint {
-  EnemySpawnPoint(Vector2 position, Vector2 size, Party troop)
+  EnemySpawnPoint(Vector2 position, Vector2 size, List<Party> troop)
       : super(
           troop: troop,
           position,
@@ -31,15 +31,17 @@ class EnemySpawnPoint extends SpawnPoint {
 
   @override
   void spawn() {
-    for (final unit in troop.units) {
-      gameRef.add(unit.toSprite(BattleType.enemy,
-          Vector2(position.x + tileSize, position.y + tileSize)));
+    for (final party in troop) {
+      for (final unit in party.units) {
+        gameRef.add(unit.toSprite(BattleType.enemy,
+            Vector2(position.x + tileSize, position.y + tileSize)));
+      }
     }
   }
 }
 
 class AllySpawnPoint extends SpawnPoint {
-  AllySpawnPoint(Vector2 position, Vector2 size, Party troop)
+  AllySpawnPoint(Vector2 position, Vector2 size, List<Party> troop)
       : super(
           troop: troop,
           position,
@@ -48,9 +50,11 @@ class AllySpawnPoint extends SpawnPoint {
 
   @override
   void spawn() {
-    for (final unit in troop.units) {
-      gameRef.add(unit.toSprite(BattleType.ally,
-          Vector2(position.x + tileSize, position.y + tileSize)));
+    for (final party in troop) {
+      for (final unit in party.units) {
+        gameRef.add(unit.toSprite(BattleType.ally,
+            Vector2(position.x + tileSize, position.y + tileSize)));
+      }
     }
   }
 }

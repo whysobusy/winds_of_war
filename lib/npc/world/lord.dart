@@ -5,12 +5,16 @@ import 'package:bonfire/bonfire.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:uuid/uuid.dart';
+import 'package:winds_of_war/interface/battle_overlay.dart';
+import 'package:winds_of_war/interface/setting_overlay.dart';
 import 'package:winds_of_war/main.dart';
 import 'package:winds_of_war/manager/game_manager.dart';
 import 'package:winds_of_war/model/enum.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/npc/world/battle_field.dart';
+import 'package:winds_of_war/player/player_world.dart';
 import 'package:winds_of_war/util/enemy_sprite_sheet.dart';
+import 'package:winds_of_war/util/extensions.dart';
 import 'package:winds_of_war/util/functions.dart';
 import 'package:winds_of_war/util/mixins/faction_mixin.dart';
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
@@ -125,6 +129,11 @@ class Lord extends SimpleNpc
   @override
   bool onCollision(GameComponent component, bool active) {
     if (!isInBattle) {
+      if (component is PlayerWorld) {
+        manager.playerEnterBattle();
+        print(this.party.units.first);
+        context.goTo(BattleEncounterMenu(blueSideArmy: [this.party], redSideArmy: [component.info.party],));
+      }
 
       if (component is WorldNpcMixin) {
         if (manager.isEnemy(this, component) && !component.isRemoving) {
@@ -279,7 +288,8 @@ class Lord extends SimpleNpc
     if (state == LordState.inCity) {
       _leaveCity();
     }
-    if (action == LordAction.rally && decision == null || action == LordAction.joinRally) {
+    if (action == LordAction.rally && decision == null ||
+        action == LordAction.joinRally) {
       return;
     }
 
@@ -363,7 +373,6 @@ class Lord extends SimpleNpc
     if (npc == this) {
       return 0;
     }
-
 
     if (true) {
       currentLeader = npc;

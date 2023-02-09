@@ -12,6 +12,7 @@ import 'package:winds_of_war/model/player_info.dart';
 import 'package:winds_of_war/model/unit.dart';
 import 'package:winds_of_war/npc/world/battle_field.dart';
 import 'package:winds_of_war/npc/world/lord.dart';
+import 'package:winds_of_war/player/player_world.dart';
 import 'package:winds_of_war/util/mixins/world_npc_mixin.dart';
 import 'package:winds_of_war/util/world_timer.dart';
 
@@ -185,29 +186,36 @@ class GameManager extends GameComponent {
       statData: StatData(attack: 30, defence: 30, life: 100),
       party: Party(units: [GoblinUnit()]));
 
-  void ayaya() {
-    print(this.gameRef.player);
-  }
-
   StatData getPlayerStatData() {
-    return _debugInfo.statData;
+    return (gameRef.player! as PlayerWorld).info.statData;
   }
 
-  PlayerInfo getPlayerInfo() {
+  PlayerInfo getPlayerInitInfo() {
     return _debugInfo;
   }
 
+  void playerEnterBattle() {
+    pauseGame();
+  }
+
+  void playerEnterMenu() {
+    pauseGame();
+  }
+
   void increaseLevel({int ammount = 1}) =>
-      _debugInfo.increaseLevel(ammount: ammount);
+      (gameRef.player! as PlayerWorld).info.increaseLevel(ammount: ammount);
 
   void increaseExp({int ammount = 1}) =>
-      _debugInfo.increaseExp(ammount: ammount);
+      (gameRef.player! as PlayerWorld).info.increaseExp(ammount: ammount);
 
-  void changeStat(StatData ammount) => _debugInfo.changeStat(ammount);
+  void changeStat(StatData ammount) =>
+      (gameRef.player! as PlayerWorld).info.changeStat(ammount);
 
-  void addUnit(Unit unit) => _debugInfo.addUnit(unit);
+  void addUnit(Unit unit) =>
+      (gameRef.player! as PlayerWorld).info.addUnit(unit);
 
-  void removeUnit(Unit unit) => _debugInfo.removeUnit(unit);
+  void removeUnit(Unit unit) =>
+      (gameRef.player! as PlayerWorld).info.removeUnit(unit);
 
   // battle
   Map<String, BattleField> battleField = {};

@@ -40,7 +40,7 @@ class CityWarMenu extends StatelessWidget {
       body: Column(
             children: [
               OptionButton(text: 'attack city', onPressed: () {
-                context.goTo(Battle(troop: cityParty));
+                //context.goTo(Battle(troop: cityParty));
               }),
               OptionButton(text: 'exit', onPressed: () => context.backTo()),
             ],

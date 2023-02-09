@@ -13,6 +13,7 @@ enum FactionType {
 
 enum UnitType {
   goblin,
+  arthax
 }
 
 enum Relation {

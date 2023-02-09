@@ -22,8 +22,9 @@ import 'npc/battle/goblin.dart';
 
 class Battle extends StatefulWidget {
   static bool useJoystick = false;
-  final Party troop;
-  const Battle({required this.troop, Key? key}) : super(key: key);
+  final List<Party> blueSideArmy;
+  final List<Party> redSideArmy;
+  const Battle({required this.blueSideArmy, required this.redSideArmy, Key? key}) : super(key: key);
 
   @override
   _BattleState createState() => _BattleState();
@@ -103,8 +104,8 @@ class _BattleState extends State<Battle> implements GameListener {
           'tiled/map_battle.json',
           forceTileSize: Vector2(tileSize, tileSize),
           objectsBuilder: {
-            'enemy_spawn_point': (p) => EnemySpawnPoint(p.position, p.size, widget.troop),
-            'ally_spawn_point': (p) => AllySpawnPoint(p.position, p.size, widget.troop),
+            'enemy_spawn_point': (p) => EnemySpawnPoint(p.position, p.size, widget.blueSideArmy),
+            'ally_spawn_point': (p) => AllySpawnPoint(p.position, p.size, widget.redSideArmy),
             'goblin': (p) => Goblin(p.position),
             'goblin_ally': (p) => GoblinAlly(p.position),
             'imp': (p) => Imp(p.position),
@@ -149,7 +150,6 @@ class _BattleState extends State<Battle> implements GameListener {
   @override
   void changeCountLiveEnemies(int count) {
     if (count == 0) {
-      _gameManager.ayaya();
       context.backTo();
     }
   }

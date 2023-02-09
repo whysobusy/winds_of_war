@@ -37,7 +37,7 @@ class _PartyOverlayState extends State<PartyOverlay> {
 
   void _sortUnits() {
     final GameManager manager = BonfireInjector.instance.get();
-    for (final unit in manager.getPlayerInfo().party.units) {
+    for (final unit in manager.getPlayerInitInfo().party.units) {
       unitMap[unit] = (unitMap[unit] ?? 0) + 1;
     }
     print(unitMap);

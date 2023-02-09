@@ -77,7 +77,7 @@ class PlayerWorld extends SimplePlayer with Lighting, ObjectCollision, FactionMi
     if (event.id == LogicalKeyboardKey.keyZ.keyId &&
         event.event == ActionEvent.DOWN) {
           print("move right");
-      gameRef.camera.moveToPositionAnimated(Vector2(position.x+1000, position.y));
+      gameRef.camera.moveToPositionAnimated(Vector2(gameRef.camera.position.x+1000, gameRef.camera.position.y));
     }
 
     if (event.id == 1 && event.event == ActionEvent.DOWN) {
